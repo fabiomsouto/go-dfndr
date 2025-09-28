@@ -13,10 +13,12 @@ import (
 const (
 	WorldWidth = 10000
 	Stars      = 500
+	MaxEnemies = 20
 )
 
 type World struct {
 	stars    []Star
+	enemies  []*Enemy
 	viewport *Viewport
 }
 
@@ -30,8 +32,17 @@ type Star struct {
 
 func NewWorld(viewport *Viewport) *World {
 	stars := generateStars(Stars)
+	enemies := make([]*Enemy, MaxEnemies)
+	for i := range enemies {
+		x := float64(randInt(0, WorldWidth))
+		y := float64(randInt(0, ScreenHeight))
+		vx := (rand.Float64() * 2) - 1
+		vy := (rand.Float64() * 2) - 1
+		enemies[i] = NewEnemy(x, y, vx, vy, viewport)
+	}
 	return &World{
 		stars:    stars,
+		enemies:  enemies,
 		viewport: viewport,
 	}
 }
@@ -97,5 +108,9 @@ func (world *World) Draw(screen *ebiten.Image) {
 			screenY >= -float64(star.radius) && screenY <= world.viewport.height+float64(star.radius) {
 			vector.DrawFilledRect(screen, float32(screenX), float32(screenY), float32(star.radius), float32(star.radius), star.color, false)
 		}
+	}
+	for _, enemy := range world.enemies {
+		enemy.Update()
+		enemy.Draw(screen, world.viewport)
 	}
 }
