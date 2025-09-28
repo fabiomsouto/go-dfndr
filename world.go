@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	WorldWidth = 3000
+	WorldWidth = 10000
+	Stars      = 500
 )
 
 type World struct {
@@ -28,7 +29,7 @@ type Star struct {
 }
 
 func NewWorld(viewport *Viewport) *World {
-	stars := generateStars(200)
+	stars := generateStars(Stars)
 	return &World{
 		stars:    stars,
 		viewport: viewport,
