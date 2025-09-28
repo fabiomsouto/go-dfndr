@@ -1,0 +1,88 @@
+package main
+
+import (
+	"image/color"
+	"math"
+	"math/rand"
+	"time"
+
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
+)
+
+const (
+	WorldWidth = 3000
+)
+
+type World struct {
+	stars    []Star
+	viewport *Viewport
+}
+
+type Star struct {
+	x, y          float32
+	radius        int // in pixels
+	color         color.RGBA
+	originalColor color.RGBA // Store original color to prevent fading
+}
+
+func NewWorld(viewport *Viewport) *World {
+	stars := generateStars(200)
+	return &World{
+		stars:    stars,
+		viewport: viewport,
+	}
+}
+
+func generateStars(n int) []Star {
+	stars := make([]Star, n)
+	for i := range n {
+		baseColor := color.RGBA{
+			R: uint8(randInt(0, 255)),
+			G: uint8(randInt(0, 255)),
+			B: uint8(randInt(0, 255)),
+			A: 255,
+		}
+		stars[i] = Star{
+			x:             float32(randInt(0, WorldWidth)),
+			y:             float32(randInt(0, ScreenHeight)),
+			color:         baseColor,
+			originalColor: baseColor,
+			radius:        randInt(1, 5),
+		}
+	}
+	return stars
+}
+
+func (world *World) Update() {
+	go func() {
+		stars := world.stars
+		currentTime := time.Now().UnixMilli()
+		for i := range stars {
+			oscillation := math.Sin(float64(i)*0.02 + float64(currentTime)*0.0005)
+			brightness := math.Abs(oscillation)
+
+			// Interpolate using the original color values
+			stars[i].color.R = uint8(float64(stars[i].originalColor.R) * (0.8 + brightness*0.4))
+			stars[i].color.G = uint8(float64(stars[i].originalColor.G) * (0.8 + brightness*0.4))
+			stars[i].color.B = uint8(float64(stars[i].originalColor.B) * (0.8 + brightness*0.4))
+		}
+	}()
+}
+
+func randInt(min, max int) int {
+	return min + rand.Intn(max-min)
+}
+
+func (world *World) Draw(screen *ebiten.Image) {
+	for _, star := range world.stars {
+		// Convert world coordinates to screen coordinates
+		screenX, screenY := world.viewport.WorldToScreen(float64(star.x), float64(star.y))
+
+		// Only draw stars that are within the viewport
+		if screenX >= -float64(star.radius) && screenX <= world.viewport.width+float64(star.radius) &&
+			screenY >= -float64(star.radius) && screenY <= world.viewport.height+float64(star.radius) {
+			vector.DrawFilledRect(screen, float32(screenX), float32(screenY), float32(star.radius), float32(star.radius), star.color, false)
+		}
+	}
+}
