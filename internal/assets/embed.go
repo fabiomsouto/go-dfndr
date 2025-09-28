@@ -1,8 +1,6 @@
 package assets
 
-import (
-	_ "embed"
-)
+import "embed"
 
-//go:embed ship.png
-var ShipPNG []byte
+//go:embed *.png
+var Assets embed.FS

@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"image"
-	"image/color"
+	_ "image/png" // Register PNG decoder
 	"log"
 	"math"
 
@@ -12,11 +12,13 @@ import (
 )
 
 const (
-	shipWidth   = 50
-	shipHeight  = 30
-	thrustForce = 1
-	dragFactor  = 0.95
-	maxSpeed    = 12
+	shipWidth     = 100
+	shipHeight    = 49
+	shipStartPosX = 60
+	shipStartPosY = 100
+	thrustForce   = 1
+	dragFactor    = 0.95
+	maxSpeed      = 15
 )
 
 type Player struct {
@@ -37,8 +39,8 @@ func NewPlayer(viewport *Viewport) *Player {
 	img := shipImg()
 	bullets := []*Bullet{}
 	return &Player{
-		x:        WorldWidth / 2, // Start in the middle of the world
-		y:        ScreenHeight / 2,
+		x:        shipStartPosX,
+		y:        shipStartPosY,
 		vx:       0,
 		vy:       0,
 		image:    img,
@@ -47,46 +49,37 @@ func NewPlayer(viewport *Viewport) *Player {
 	}
 }
 
-// shipImgTriangle creates a simple triangular ship image
-func shipImgTriangle() *ebiten.Image {
-	img := ebiten.NewImage(shipWidth, shipHeight)
-	// simple triangle shape for the ship for the moment
-	vertices := []ebiten.Vertex{
-		{DstX: 0, DstY: 0, SrcX: 1, SrcY: 1, ColorR: 1, ColorG: 255, ColorB: 1, ColorA: 1},   //tip
-		{DstX: 50, DstY: 15, SrcX: 1, SrcY: 1, ColorR: 1, ColorG: 255, ColorB: 1, ColorA: 1}, //top left
-		{DstX: 0, DstY: 30, SrcX: 1, SrcY: 1, ColorR: 1, ColorG: 255, ColorB: 1, ColorA: 1},  //bottom left
-	}
-	indices := []uint16{0, 1, 2}
-	sourceImg := ebiten.NewImage(shipWidth, shipHeight)
-	sourceImg.Fill(color.White)
-	opts := &ebiten.DrawTrianglesOptions{}
-	img.DrawTriangles(vertices, indices, sourceImg, opts)
-	return img
-}
-
 func shipImg() *ebiten.Image {
-	// load image from file
-	img, _, err := image.Decode(bytes.NewReader(assets.ShipPNG))
-	shipImg := ebiten.NewImageFromImage(img)
+	// load image from embedded filesystem
+	data, err := assets.Assets.ReadFile("ship.png")
 	if err != nil {
-		log.Fatalf("failed to load ship image: %v", err)
+		log.Fatalf("failed to read ship.png from embedded assets: %v", err)
 	}
-	return shipImg
+
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		log.Fatalf("failed to decode ship image: %v", err)
+	}
+
+	return ebiten.NewImageFromImage(img)
 }
 
 func (p *Player) Update() {
-
 	// Apply thrust
-	if ebiten.IsKeyPressed((ebiten.KeyArrowRight)) {
+	// Right movement
+	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) || ebiten.IsKeyPressed(ebiten.KeyD) {
 		p.vx += thrustForce
 	}
-	if ebiten.IsKeyPressed((ebiten.KeyArrowLeft)) {
+	// Left movement
+	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) || ebiten.IsKeyPressed(ebiten.KeyA) {
 		p.vx -= thrustForce
 	}
-	if ebiten.IsKeyPressed((ebiten.KeyArrowUp)) {
+	// Up movement
+	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) || ebiten.IsKeyPressed(ebiten.KeyW) {
 		p.vy -= thrustForce
 	}
-	if ebiten.IsKeyPressed((ebiten.KeyArrowDown)) {
+	// Down movement
+	if ebiten.IsKeyPressed(ebiten.KeyArrowDown) || ebiten.IsKeyPressed(ebiten.KeyS) {
 		p.vy += thrustForce
 	}
 
