@@ -18,6 +18,7 @@ const (
 
 type World struct {
 	stars    []Star
+	player   *Player
 	enemies  []*Enemy
 	viewport *Viewport
 }
@@ -30,7 +31,7 @@ type Star struct {
 	parallaxFactor float64    // How much this star moves relative to the camera (0.0-1.0)
 }
 
-func NewWorld(viewport *Viewport) *World {
+func NewWorld(player *Player, viewport *Viewport) *World {
 	stars := generateStars(Stars)
 	enemies := make([]*Enemy, MaxEnemies)
 	for i := range enemies {
@@ -38,10 +39,11 @@ func NewWorld(viewport *Viewport) *World {
 		y := float64(randInt(0, ScreenHeight))
 		vx := (rand.Float64() * 2) - 1
 		vy := (rand.Float64() * 2) - 1
-		enemies[i] = NewEnemy(x, y, vx, vy, viewport)
+		enemies[i] = NewEnemy(x, y, vx, vy, player, viewport, 1) // TODO: make level global and dynamic
 	}
 	return &World{
 		stars:    stars,
+		player:   player,
 		enemies:  enemies,
 		viewport: viewport,
 	}
@@ -90,6 +92,11 @@ func randInt(min, max int) int {
 }
 
 func (world *World) Draw(screen *ebiten.Image) {
+	updateStars(world, screen)
+	updateEnemies(world, screen)
+}
+
+func updateStars(world *World, screen *ebiten.Image) {
 	for _, star := range world.stars {
 		// Apply parallax effect by scaling the viewport offset
 		parallaxX := world.viewport.x * star.parallaxFactor
@@ -109,8 +116,40 @@ func (world *World) Draw(screen *ebiten.Image) {
 			vector.DrawFilledRect(screen, float32(screenX), float32(screenY), float32(star.radius), float32(star.radius), star.color, false)
 		}
 	}
+}
+
+func updateEnemies(world *World, screen *ebiten.Image) {
+	// First update all enemies
 	for _, enemy := range world.enemies {
 		enemy.Update()
+	}
+
+	// Check for bullet collisions with enemies
+	for _, bullet := range world.player.bullets {
+		if bullet.active {
+			for _, enemy := range world.enemies {
+				if enemy.CheckBulletCollision(bullet.x, bullet.y) {
+					bullet.active = false // Deactivate bullet on hit
+					break                 // Exit inner loop since bullet can only hit one enemy
+				}
+			}
+		}
+	}
+
+	// Respawn inactive enemies
+	for i, enemy := range world.enemies {
+		if !enemy.active {
+			// Create a new enemy at a random position
+			x := float64(randInt(0, WorldWidth))
+			y := float64(randInt(0, ScreenHeight))
+			vx := (rand.Float64() * 2) - 1
+			vy := (rand.Float64() * 2) - 1
+			world.enemies[i] = NewEnemy(x, y, vx, vy, world.player, world.viewport, 0) // TODO: respawn with correct level
+		}
+	}
+
+	// Draw all active enemies
+	for _, enemy := range world.enemies {
 		enemy.Draw(screen, world.viewport)
 	}
 }

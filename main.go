@@ -18,9 +18,12 @@ type Game struct {
 
 func newGame() *Game {
 	viewport := NewViewport(ScreenWidth, ScreenHeight, WorldWidth)
+	player := NewPlayer(viewport)
+	world := NewWorld(player, viewport)
+
 	return &Game{
-		player: NewPlayer(viewport),
-		world:  NewWorld(viewport),
+		player: player,
+		world:  world,
 	}
 }
 

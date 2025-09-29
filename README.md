@@ -9,14 +9,22 @@ Have fun.
 
 ## Internals
 
-Used [ebitengine](github.com/hajimehoshi/ebiten) to help speed development. It's got lots of nice examples and support for the basic things a game requires.
+Used [ebitengine](https://github.com/hajimehoshi/ebiten) to help speed development. It's got lots of nice examples and support for the basic things a game requires.
 
 
-## How to run
+## How to play
 
 ```bash
 $ make run
 ```
+
+## Objective
+
+Help Captain Gopher kill all the issues that plague the software universe!
+
+### Memleaks
+
+Their evil and unpredictable nature are a constant threat! Kill them before they kill you!
 
 ## Disclaimer
 
