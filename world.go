@@ -17,6 +17,7 @@ const (
 )
 
 type World struct {
+	level    int
 	stars    []Star
 	player   *Player
 	enemies  []*Enemy
@@ -31,7 +32,7 @@ type Star struct {
 	parallaxFactor float64    // How much this star moves relative to the camera (0.0-1.0)
 }
 
-func NewWorld(player *Player, viewport *Viewport) *World {
+func NewWorld(player *Player, viewport *Viewport, level int) *World {
 	stars := generateStars(Stars)
 	enemies := make([]*Enemy, MaxEnemies)
 	for i := range enemies {
@@ -39,9 +40,10 @@ func NewWorld(player *Player, viewport *Viewport) *World {
 		y := float64(randInt(0, ScreenHeight))
 		vx := (rand.Float64() * 2) - 1
 		vy := (rand.Float64() * 2) - 1
-		enemies[i] = NewEnemy(x, y, vx, vy, player, viewport, 1) // TODO: make level global and dynamic
+		enemies[i] = NewEnemy(x, y, vx, vy, player, viewport, level)
 	}
 	return &World{
+		level:    level,
 		stars:    stars,
 		player:   player,
 		enemies:  enemies,
@@ -144,7 +146,7 @@ func updateEnemies(world *World, screen *ebiten.Image) {
 			y := float64(randInt(0, ScreenHeight))
 			vx := (rand.Float64() * 2) - 1
 			vy := (rand.Float64() * 2) - 1
-			world.enemies[i] = NewEnemy(x, y, vx, vy, world.player, world.viewport, 0) // TODO: respawn with correct level
+			world.enemies[i] = NewEnemy(x, y, vx, vy, world.player, world.viewport, world.level)
 		}
 	}
 

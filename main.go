@@ -9,6 +9,7 @@ import (
 const (
 	ScreenWidth  = 1024
 	ScreenHeight = 768
+	Level        = 1
 )
 
 type Game struct {
@@ -19,7 +20,7 @@ type Game struct {
 func newGame() *Game {
 	viewport := NewViewport(ScreenWidth, ScreenHeight, WorldWidth)
 	player := NewPlayer(viewport)
-	world := NewWorld(player, viewport)
+	world := NewWorld(player, viewport, Level)
 
 	return &Game{
 		player: player,
