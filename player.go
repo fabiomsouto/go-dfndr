@@ -10,6 +10,7 @@ import (
 	"math/rand"
 
 	"github.com/fabiomsouto/dfndr/internal/assets"
+	"github.com/fabiomsouto/dfndr/internal/utils"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
@@ -20,7 +21,7 @@ const (
 
 	shipStartPosX = 60
 	shipStartPosY = 100
-	shipMaxSpeed  = 15
+	shipMaxSpeed  = 20
 
 	thrustForce = 1
 	dragFactor  = 0.95
@@ -35,6 +36,7 @@ type Player struct {
 	bullets      []*Bullet
 	viewport     *Viewport
 	spaceWasDown bool // Track previous state of space key
+	facingLeft   bool // Track which direction the player is facing
 }
 
 type TrailPoint struct {
@@ -64,38 +66,12 @@ func NewPlayer(viewport *Viewport) *Player {
 		bullets:      bullets,
 		viewport:     viewport,
 		spaceWasDown: false,
+		facingLeft:   false, // Start facing right
 	}
 }
 
-// HSVToRGB converts HSV color values to RGB
-func HSVToRGB(h, s, v float64) color.RGBA {
-	h = math.Mod(h, 360) // Keep hue in [0,360)
-	c := v * s
-	x := c * (1 - math.Abs(math.Mod(h/60, 2)-1))
-	m := v - c
-
-	var r, g, b float64
-	switch {
-	case h < 60:
-		r, g, b = c, x, 0
-	case h < 120:
-		r, g, b = x, c, 0
-	case h < 180:
-		r, g, b = 0, c, x
-	case h < 240:
-		r, g, b = 0, x, c
-	case h < 300:
-		r, g, b = x, 0, c
-	default:
-		r, g, b = c, 0, x
-	}
-
-	return color.RGBA{
-		R: uint8((r + m) * 255),
-		G: uint8((g + m) * 255),
-		B: uint8((b + m) * 255),
-		A: 255,
-	}
+func (p *Player) Position() (float64, float64) {
+	return p.x, p.y
 }
 
 func shipImg() *ebiten.Image {
@@ -118,10 +94,16 @@ func (p *Player) Update() {
 	// Right movement
 	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) || ebiten.IsKeyPressed(ebiten.KeyD) {
 		p.vx += thrustForce
+		if p.vx > 0.1 { // Only update facing direction when we have meaningful movement
+			p.facingLeft = false
+		}
 	}
 	// Left movement
 	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) || ebiten.IsKeyPressed(ebiten.KeyA) {
 		p.vx -= thrustForce
+		if p.vx < -0.1 { // Only update facing direction when we have meaningful movement
+			p.facingLeft = true
+		}
 	}
 	// Up movement
 	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) || ebiten.IsKeyPressed(ebiten.KeyW) {
@@ -138,9 +120,14 @@ func (p *Player) Update() {
 		// Find an inactive bullet to reuse
 		for _, b := range p.bullets {
 			if !b.active {
-				b.x = p.x + shipWidth
-				b.y = p.y + shipHeight - 12
-				b.right = p.vx >= 0
+				// Adjust bullet spawn position based on player direction
+				if p.facingLeft {
+					b.x = p.x // When facing left, spawn at the front of the ship
+				} else {
+					b.x = p.x + shipWidth // When facing right, spawn at the front of the ship
+				}
+				b.y = p.y + 36          // Center vertically on the ship
+				b.right = !p.facingLeft // Fire in the direction the player is facing
 				b.active = true
 				b.trail = make([]TrailPoint, 0, 50) // Preallocate space for 50 points
 				b.trailHue = rand.Float64() * 360   // Random starting hue
@@ -271,13 +258,13 @@ func (p *Player) Draw(screen *ebiten.Image) {
 
 	op := &ebiten.DrawImageOptions{}
 
-	if p.vx < 0 {
-		// For left movement: first scale, then translate
+	if p.facingLeft {
+		// For left-facing: scale and translate
 		op.GeoM.Scale(-1, 1)
 		op.GeoM.Translate(shipWidth, 0)
 		op.GeoM.Translate(screenX, screenY)
 	} else {
-		// For right movement or stationary: just translate
+		// For right-facing: just translate
 		op.GeoM.Translate(screenX, screenY)
 	}
 
@@ -289,7 +276,7 @@ func (p *Player) Draw(screen *ebiten.Image) {
 				totalPoints := len(b.trail)
 
 				// Calculate current color for the entire trail
-				currentColor := HSVToRGB(b.trailHue, 1, 1)
+				currentColor := utils.HSVToRGB(b.trailHue, 1, 1)
 
 				for i := 0; i < totalPoints-1; i++ {
 					p1 := b.trail[i]
