@@ -30,15 +30,16 @@ type DifficultyLevel struct {
 	speed     float64 // Actual movement speed
 	wander    float64 // Random movement factor (0-1)
 	precision float64 // Tracking precision (0-1)
+	hits      int     // Number of hits to destroy
 }
 
 var (
 	difficultyLevels = []DifficultyLevel{
-		{speed: baseSpeed * 0.3, wander: wanderFactor, precision: precisionBase},             // Level 1: Slow, erratic
-		{speed: baseSpeed * 0.5, wander: wanderFactor * 0.7, precision: precisionBase * 1.5}, // Level 2: Faster, less erratic
-		{speed: baseSpeed * 0.9, wander: wanderFactor * 0.5, precision: precisionBase * 2.0}, // Level 3: Even faster, more precise
-		{speed: baseSpeed, wander: wanderFactor * 0.3, precision: precisionBase * 2.5},       // Level 4: Full speed, very precise
-		{speed: baseSpeed * 1.3, wander: wanderFactor * 0.1, precision: precisionBase * 3.0}, // Level 5: Aggressive!
+		{speed: baseSpeed * 0.3, wander: wanderFactor, precision: precisionBase, hits: 1},             // Level 1: Slow, erratic
+		{speed: baseSpeed * 0.5, wander: wanderFactor * 0.7, precision: precisionBase * 1.5, hits: 2}, // Level 2: Faster, less erratic
+		{speed: baseSpeed * 0.9, wander: wanderFactor * 0.5, precision: precisionBase * 2.0, hits: 3}, // Level 3: Even faster, more precise
+		{speed: baseSpeed, wander: wanderFactor * 0.3, precision: precisionBase * 2.5, hits: 4},       // Level 4: Full speed, very precise
+		{speed: baseSpeed * 1.3, wander: wanderFactor * 0.1, precision: precisionBase * 3.0, hits: 5}, // Level 5: Aggressive!
 	}
 )
 
@@ -82,7 +83,7 @@ func NewEnemy(x, y, vx, vy float64, player *Player, viewport *Viewport, level in
 		wanderAngle:   rand.Float64() * 2 * math.Pi,
 		updateCounter: 0,
 		rng:           rand.New(source),
-		health:        3, // Start with 3 health points
+		health:        difficultyLevels[level].hits,
 		active:        true,
 		hitTimer:      0,
 		particles:     make([]ExplosionParticle, 0),
